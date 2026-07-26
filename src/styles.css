@@ -302,4 +302,3 @@ input.leak-input:focus, textarea.leak-input:focus {
   border-radius: var(--radius-md);
 }
 @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-}
