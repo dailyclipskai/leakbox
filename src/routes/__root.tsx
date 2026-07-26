@@ -72,8 +72,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "BoxLeak — Browse boxes" },
       { name: "twitter:description", content: "LeakBox Central is a website for discovering and sharing community-created \"boxes\" of information." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/569f9874-8575-4824-83ea-e70d1d1dbbe2/id-preview-ad25e994--04158958-3b6e-4f3a-a146-6254cf3b195c.lovable.app-1785090346183.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/569f9874-8575-4824-83ea-e70d1d1dbbe2/id-preview-ad25e994--04158958-3b6e-4f3a-a146-6254cf3b195c.lovable.app-1785090346183.png" },
+      { property: "og:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2b50f917-dbda-4bbe-80b6-d492f53571b8" },
+      { name: "twitter:image", content: "https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/2b50f917-dbda-4bbe-80b6-d492f53571b8" },
     ],
     links: [
       {
@@ -83,6 +83,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       { rel: "stylesheet", href: "https://fonts.googleapis.com/css2?family=Creepster&family=Nosifer&family=Inter:wght@400;500;600;700&display=swap" },
+      { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
     ],
   }),
   shellComponent: RootShell,
