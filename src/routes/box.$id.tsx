@@ -1,0 +1,163 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth-context";
+import { BoxImage } from "@/components/BoxImage";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { highlight } from "@/lib/highlight";
+import { Eye, Heart, Share2, Calendar, ArrowLeft, ShieldCheck } from "lucide-react";
+import { toast } from "sonner";
+
+type Search = { q?: string };
+
+export const Route = createFileRoute("/box/$id")({
+  validateSearch: (s: Record<string, unknown>): Search => ({ q: typeof s.q === "string" ? s.q : undefined }),
+  head: () => ({
+    meta: [
+      { title: "Box — LeakBox" },
+      { name: "description", content: "View a community box on LeakBox." },
+      { property: "og:title", content: "Box — LeakBox" },
+      { property: "og:description", content: "View a community box on LeakBox." },
+    ],
+  }),
+  component: BoxPage,
+});
+
+type Box = {
+  id: string; author_id: string; name: string; description: string; image_url: string | null;
+  verified: boolean; views: number; likes: number; created_at: string;
+  discord_id: string | null; phone: string | null; gmail: string | null;
+  profiles?: { username: string; display_name: string; verified: boolean } | null;
+};
+
+function BoxPage() {
+  const { id } = Route.useParams();
+  const { q } = Route.useSearch();
+  const { session, isAdmin } = useAuth();
+  const navigate = useNavigate();
+  const [box, setBox] = useState<Box | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [notFound, setNotFound] = useState(false);
+  const firstMatch = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data } = await supabase
+        .from("boxes")
+        .select("*, profiles:profiles!boxes_author_id_fkey(username, display_name, verified)")
+        .eq("id", id).maybeSingle();
+      if (!alive) return;
+      if (!data) { setNotFound(true); return; }
+      setBox(data as unknown as Box);
+
+      // record view (dedup 24h)
+      if (session?.user) {
+        const { data: existing } = await supabase
+          .from("box_views")
+          .select("viewed_at")
+          .eq("box_id", id).eq("viewer_id", session.user.id).maybeSingle();
+        const stale = !existing || (Date.now() - new Date(existing.viewed_at).getTime() > 24 * 3600 * 1000);
+        if (stale) {
+          await supabase.from("box_views").upsert({ box_id: id, viewer_id: session.user.id, viewed_at: new Date().toISOString() });
+          await supabase.rpc("increment_box_views", { _box_id: id });
+          setBox((b) => (b ? { ...b, views: b.views + 1 } : b));
+        }
+
+        const { data: like } = await supabase.from("box_likes").select("box_id").eq("box_id", id).eq("user_id", session.user.id).maybeSingle();
+        setLiked(!!like);
+      }
+    })();
+    return () => { alive = false; };
+  }, [id, session?.user?.id]);
+
+  useEffect(() => {
+    if (q && firstMatch.current) firstMatch.current.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [q, box]);
+
+  async function toggleLike() {
+    if (!session?.user) { toast.error("Login to like."); return; }
+    if (!box) return;
+    if (liked) {
+      await supabase.from("box_likes").delete().eq("box_id", box.id).eq("user_id", session.user.id);
+      setLiked(false); setBox({ ...box, likes: Math.max(0, box.likes - 1) });
+    } else {
+      await supabase.from("box_likes").insert({ box_id: box.id, user_id: session.user.id });
+      setLiked(true); setBox({ ...box, likes: box.likes + 1 });
+    }
+  }
+
+  async function adminVerify() {
+    if (!box) return;
+    const { error } = await supabase.from("boxes").update({ verified: !box.verified }).eq("id", box.id);
+    if (error) return toast.error(error.message);
+    setBox({ ...box, verified: !box.verified });
+    toast.success(`Box ${!box.verified ? "verified" : "unverified"}.`);
+  }
+
+  const share = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      toast.success("Link copied.");
+    } catch { toast.error("Copy failed."); }
+  };
+
+  const hlTargets = useMemo(() => ({ q: q ?? "" }), [q]);
+
+  if (notFound) return <div className="max-w-2xl mx-auto p-10 text-center glass mt-8"><p className="text-muted-foreground">Box not found.</p></div>;
+  if (!box) return <div className="max-w-3xl mx-auto p-4"><div className="skeleton h-96" /></div>;
+
+  return (
+    <div className="max-w-4xl mx-auto px-4 py-6">
+      <button onClick={() => navigate({ to: "/" })} className="btn-ghost mb-4 text-xs"><ArrowLeft size={14} /> Back</button>
+      <div className="glass overflow-hidden fade-in">
+        <div className="relative bg-black/60">
+          <BoxImage path={box.image_url} alt={box.name} className="w-full max-h-[560px] object-contain" fallbackClassName="w-full h-96" />
+          {box.verified && (
+            <div className="absolute top-3 right-3 bg-black/70 backdrop-blur rounded-full p-1.5">
+              <VerifiedBadge size={28} />
+            </div>
+          )}
+        </div>
+        <div className="p-6 space-y-4">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <h1 className="font-horror text-3xl md:text-4xl text-primary red-glow flex items-center gap-2">
+              {highlight(box.name, hlTargets.q)}
+              {box.verified && <VerifiedBadge size={24} />}
+            </h1>
+            <div className="flex items-center gap-2">
+              <button onClick={toggleLike} className={`btn-ghost ${liked ? "!text-primary !border-primary" : ""}`}>
+                <Heart size={16} fill={liked ? "currentColor" : "none"} /> {box.likes}
+              </button>
+              <button onClick={share} className="btn-ghost"><Share2 size={16} /> Share</button>
+              {isAdmin && (
+                <button onClick={adminVerify} className="btn-red !py-1.5 !px-3 text-xs"><ShieldCheck size={14} /> {box.verified ? "Unverify" : "Verify"}</button>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1"><Eye size={14} /> {box.views.toLocaleString()} views</span>
+            <span className="flex items-center gap-1"><Calendar size={14} /> {new Date(box.created_at).toLocaleDateString()}</span>
+            <Link to="/u/$username" params={{ username: box.profiles?.username ?? "" }} className="text-foreground hover:text-primary">
+              @{box.profiles?.username}{box.profiles?.verified && <VerifiedBadge size={12} className="inline ml-1" />}
+            </Link>
+          </div>
+
+          <p className="text-sm leading-relaxed whitespace-pre-wrap" ref={(el) => { if (q && el && !firstMatch.current) firstMatch.current = el; }}>
+            {highlight(box.description, hlTargets.q)}
+          </p>
+
+          {(box.discord_id || box.phone || box.gmail) && (
+            <div className="glass-strong p-4 space-y-2 text-sm">
+              <h3 className="font-horror text-primary text-lg">Metadata</h3>
+              {box.discord_id && <div><span className="text-muted-foreground">Discord: </span>{highlight(box.discord_id, hlTargets.q)}</div>}
+              {box.phone && <div><span className="text-muted-foreground">Phone: </span>{highlight(box.phone, hlTargets.q)}</div>}
+              {box.gmail && <div><span className="text-muted-foreground">Gmail: </span>{highlight(box.gmail, hlTargets.q)}</div>}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
