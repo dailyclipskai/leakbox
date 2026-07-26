@@ -12,6 +12,7 @@ export type Profile = {
   bio: string | null;
   birthday: string | null;
   last_post_at: string | null;
+  banned: boolean;
 };
 
 type AuthCtx = {

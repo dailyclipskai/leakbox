@@ -205,6 +205,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          banned: boolean
           bio: string | null
           birthday: string | null
           display_name: string
@@ -216,6 +217,7 @@ export type Database = {
           verified: boolean
         }
         Insert: {
+          banned?: boolean
           bio?: string | null
           birthday?: string | null
           display_name: string
@@ -227,6 +229,7 @@ export type Database = {
           verified?: boolean
         }
         Update: {
+          banned?: boolean
           bio?: string | null
           birthday?: string | null
           display_name?: string
@@ -236,6 +239,30 @@ export type Database = {
           profile_picture?: string | null
           username?: string
           verified?: boolean
+        }
+        Relationships: []
+      }
+      site_settings: {
+        Row: {
+          id: number
+          logo_url: string | null
+          primary_color: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          logo_url?: string | null
+          primary_color?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          logo_url?: string | null
+          primary_color?: string
+          updated_at?: string
+          updated_by?: string | null
         }
         Relationships: []
       }
