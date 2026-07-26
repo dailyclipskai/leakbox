@@ -1,5 +1,4 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Logo } from "@/components/Logo";
 import { Leaderboard } from "@/components/Leaderboard";
 import { BrowseFeed } from "@/components/BrowseFeed";
 
