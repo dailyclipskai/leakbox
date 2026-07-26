@@ -1,24 +1,37 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { Logo } from "@/components/Logo";
+import { Leaderboard } from "@/components/Leaderboard";
+import { BrowseFeed } from "@/components/BrowseFeed";
 
-// No head() here: the home route inherits title/description/og/twitter from
-// __root.tsx, and ships no og:image so serve-time hosting can inject the
-// project's social preview (explicit og:image or latest screenshot).
 export const Route = createFileRoute("/")({
-  component: Index,
+  head: () => ({
+    meta: [
+      { title: "LeakBox — Browse community boxes" },
+      { name: "description", content: "Community-verified boxes. Search, browse, and share." },
+      { property: "og:title", content: "LeakBox — Browse community boxes" },
+      { property: "og:description", content: "Community-verified boxes. Search, browse, and share." },
+    ],
+  }),
+  component: Home,
 });
 
-// IMPORTANT: Replace this placeholder. See ./README.md for routing conventions.
-function Index() {
+function Home() {
   return (
-    <div
-      className="flex min-h-screen items-center justify-center"
-      style={{ backgroundColor: "#fcfbf8" }}
-    >
-      <img
-        data-lovable-blank-page-placeholder="REMOVE_THIS"
-        src="https://cdn.gpteng.co/blank-app-v1.svg"
-        alt="Your app will live here!"
-      />
+    <div className="max-w-6xl mx-auto px-4 pb-12">
+      {/* Compact hero */}
+      <section className="text-center py-6 fade-in">
+        <h2 className="font-horror text-4xl md:text-5xl text-primary red-glow-lg">LeakBox</h2>
+        <div className="mt-2 flex justify-center"><Logo size={56} /></div>
+        <p className="mt-3 text-sm text-muted-foreground italic">Browse community boxes.</p>
+      </section>
+
+      {/* Two-column layout: leaderboard left, browse feed right */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,280px)_1fr] gap-6 mt-4">
+        <div className="lg:sticky lg:top-6 self-start">
+          <Leaderboard />
+        </div>
+        <BrowseFeed />
+      </div>
     </div>
   );
 }
