@@ -6,10 +6,10 @@ import { BrowseFeed } from "@/components/BrowseFeed";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "LeakBox — Browse community boxes" },
-      { name: "description", content: "Community-verified boxes. Search, browse, and share." },
-      { property: "og:title", content: "LeakBox — Browse community boxes" },
-      { property: "og:description", content: "Community-verified boxes. Search, browse, and share." },
+      { title: "LeakBox — Browse boxes" },
+      { name: "description", content: "LeakBox Central is a modern cyber-horror website for discovering and sharing community-created \"boxes\" of information." },
+      { property: "og:title", content: "LeakBox — Browse boxes" },
+      { property: "og:description", content: "LeakBox Central is a modern cyber-horror website for discovering and sharing community-created \"boxes\" of information." },
     ],
   }),
   component: Home,
