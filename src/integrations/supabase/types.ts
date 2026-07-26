@@ -109,7 +109,15 @@ export type Database = {
           verified?: boolean
           views?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "boxes_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       friendships: {
         Row: {
