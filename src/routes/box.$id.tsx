@@ -54,7 +54,7 @@ function BoxPage() {
       if (!data) { setNotFound(true); return; }
       setBox(data as unknown as Box);
 
-      // record view (dedup 24h)
+      // record view (dedup 24h for signed-in; guests always count)
       if (session?.user) {
         const { data: existing } = await supabase
           .from("box_views")
@@ -69,6 +69,9 @@ function BoxPage() {
 
         const { data: like } = await supabase.from("box_likes").select("box_id").eq("box_id", id).eq("user_id", session.user.id).maybeSingle();
         setLiked(!!like);
+      } else {
+        await supabase.rpc("increment_box_views", { _box_id: id });
+        setBox((b) => (b ? { ...b, views: b.views + 1 } : b));
       }
     })();
     return () => { alive = false; };
