@@ -43,7 +43,7 @@ export function Leaderboard() {
     <aside className="glass p-5 fade-in">
       <div className="flex items-center gap-2 mb-4">
         <Trophy size={18} className="text-primary" />
-        <h2 className="font-horror text-xl text-primary red-glow">Top Box</h2>
+        <h2 className="font-horror text-xl text-primary red-glow">TOP VERIFIED BOX</h2>
       </div>
       {rows === null ? (
         <div className="space-y-2">
@@ -65,7 +65,7 @@ export function Leaderboard() {
                 <div className="flex-1 min-w-0">
                   <div className="text-sm truncate flex items-center gap-1">
                     {r.display_name}
-                    {r.verified && <VerifiedBadge size={12} />}
+                    {r.verified && <VerifiedBadge size={12} title="Verified user" />}
                   </div>
                   <div className="text-xs text-muted-foreground truncate">@{r.username}</div>
                 </div>

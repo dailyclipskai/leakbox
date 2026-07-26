@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import { Eye, Heart } from "lucide-react";
+import { Eye, Heart, Image as ImageIcon, Video, Lock } from "lucide-react";
 import { BoxImage } from "./BoxImage";
 import { VerifiedBadge } from "./VerifiedBadge";
 import { highlight } from "@/lib/highlight";
+
+export type BoxMedia = { path: string; kind: "image" | "video" };
 
 export type BoxRow = {
   id: string;
@@ -17,10 +19,16 @@ export type BoxRow = {
   discord_id: string | null;
   phone: string | null;
   gmail: string | null;
+  visibility?: "public" | "private";
+  media?: BoxMedia[] | null;
   profiles?: { username: string; display_name: string; verified: boolean } | null;
 };
 
 export function BoxCard({ box, query = "" }: { box: BoxRow; query?: string }) {
+  const media = Array.isArray(box.media) ? box.media : [];
+  const imgCount = media.filter((m) => m.kind === "image").length + (box.image_url && !media.some((m) => m.path === box.image_url) ? 1 : 0);
+  const vidCount = media.filter((m) => m.kind === "video").length;
+  const isPrivate = box.visibility === "private";
   return (
     <Link
       to="/box/$id"
@@ -32,7 +40,18 @@ export function BoxCard({ box, query = "" }: { box: BoxRow; query?: string }) {
         <BoxImage path={box.image_url} alt={box.name} className="w-full h-full object-cover" fallbackClassName="w-full h-full" />
         {box.verified && (
           <div className="absolute top-2 right-2 bg-black/70 backdrop-blur rounded-full p-1">
-            <VerifiedBadge size={22} />
+            <VerifiedBadge size={22} title="Verified box" />
+          </div>
+        )}
+        {isPrivate && (
+          <div className="absolute top-2 left-2 flex items-center gap-1 bg-black/70 backdrop-blur rounded-full px-2 py-0.5 text-[10px] uppercase tracking-wider text-primary">
+            <Lock size={11} /> Private
+          </div>
+        )}
+        {(imgCount > 0 || vidCount > 0) && (
+          <div className="absolute bottom-2 right-2 flex items-center gap-2 bg-black/70 backdrop-blur rounded-md px-2 py-0.5 text-[11px] text-foreground">
+            {imgCount > 0 && <span className="flex items-center gap-1"><ImageIcon size={11} /> {imgCount}</span>}
+            {vidCount > 0 && <span className="flex items-center gap-1"><Video size={11} /> {vidCount}</span>}
           </div>
         )}
       </div>
@@ -48,7 +67,7 @@ export function BoxCard({ box, query = "" }: { box: BoxRow; query?: string }) {
             by{" "}
             <span className="text-foreground">
               @{box.profiles?.username ?? "unknown"}
-              {box.profiles?.verified && <VerifiedBadge size={12} className="inline ml-1" />}
+              {box.profiles?.verified && <VerifiedBadge size={12} className="inline ml-1" title="Verified user" />}
             </span>
           </span>
           <span>{new Date(box.created_at).toLocaleDateString()}</span>

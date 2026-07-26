@@ -1,11 +1,11 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { BoxCard, type BoxRow } from "@/components/BoxCard";
 import { toast } from "sonner";
-import { UserPlus, ShieldCheck, BadgePlus } from "lucide-react";
+import { UserPlus, ShieldCheck, BadgePlus, Camera } from "lucide-react";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({
@@ -24,13 +24,15 @@ type P = { id: string; username: string; display_name: string; verified: boolean
 function Profile() {
   const { username } = Route.useParams();
   const { session, profile: me, isAdmin, refresh } = useAuth();
-  const navigate = useNavigate();
   const [p, setP] = useState<P | null>(null);
   const [boxes, setBoxes] = useState<BoxRow[] | null>(null);
-  const [tab, setTab] = useState<"posted" | "verified">("posted");
+  const [tab, setTab] = useState<"posted" | "verified" | "private">("posted");
   const [friendCount, setFriendCount] = useState(0);
   const [notFound, setNotFound] = useState(false);
   const [friendStatus, setFriendStatus] = useState<"none" | "pending" | "accepted" | "outgoing">("none");
+  const [rank, setRank] = useState<number | null>(null);
+  const fileRef = useRef<HTMLInputElement | null>(null);
+  const [uploadingPfp, setUploadingPfp] = useState(false);
 
   useEffect(() => {
     let alive = true;
@@ -47,6 +49,14 @@ function Profile() {
       setBoxes((bx as unknown as BoxRow[]) ?? []);
       setFriendCount(count ?? 0);
 
+      // Compute verified-box rank across all authors
+      const { data: allVerified } = await supabase.from("boxes").select("author_id").eq("verified", true);
+      const counts = new Map<string, number>();
+      (allVerified ?? []).forEach((b: { author_id: string }) => counts.set(b.author_id, (counts.get(b.author_id) ?? 0) + 1));
+      const ranked = [...counts.entries()].sort((a, b) => b[1] - a[1]);
+      const idx = ranked.findIndex(([id]) => id === prof.id);
+      if (alive) setRank(idx >= 0 ? idx + 1 : null);
+
       if (session?.user && session.user.id !== prof.id) {
         const { data: f } = await supabase.from("friendships").select("*")
           .or(`and(requester_id.eq.${session.user.id},addressee_id.eq.${prof.id}),and(requester_id.eq.${prof.id},addressee_id.eq.${session.user.id})`)
@@ -61,8 +71,11 @@ function Profile() {
   if (!p) return <div className="max-w-3xl mx-auto p-4"><div className="skeleton h-40" /></div>;
 
   const isMe = session?.user?.id === p.id;
-  const posted = boxes ?? [];
+  const allBoxes = boxes ?? [];
+  // Non-owners cannot see private boxes anyway (RLS filters). For self view we split by visibility.
+  const posted = isMe ? allBoxes.filter((b) => b.visibility !== "private") : allBoxes;
   const verified = posted.filter((b) => b.verified);
+  const privateBoxes = isMe ? allBoxes.filter((b) => b.visibility === "private") : [];
   const totalViews = posted.reduce((s, b) => s + b.views, 0);
   const totalLikes = posted.reduce((s, b) => s + b.likes, 0);
 
@@ -93,15 +106,54 @@ function Profile() {
     await refresh();
   }
 
+  async function uploadPfp(f: File) {
+    if (!session?.user || !p) return;
+    setUploadingPfp(true);
+    try {
+      const ext = f.name.split(".").pop() || "png";
+      const path = `${session.user.id}/pfp-${Date.now()}.${ext}`;
+      const up = await supabase.storage.from("avatars").upload(path, f, { upsert: true });
+      if (up.error) throw up.error;
+      const { data: signed } = await supabase.storage.from("avatars").createSignedUrl(path, 60 * 60 * 24 * 365 * 5);
+      const url = signed?.signedUrl ?? null;
+      const { error } = await supabase.from("profiles").update({ profile_picture: url }).eq("id", p.id);
+      if (error) throw error;
+      setP({ ...p, profile_picture: url });
+      await refresh();
+      toast.success("Profile picture updated.");
+    } catch (e) { toast.error((e as Error).message); }
+    finally { setUploadingPfp(false); }
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
       <div className="glass p-6 flex flex-col md:flex-row items-center gap-6 fade-in">
-        <div className="w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/60 overflow-hidden flex items-center justify-center text-3xl font-horror text-primary">
+        <div className="relative w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/60 overflow-hidden flex items-center justify-center text-3xl font-horror text-primary group">
           {p.profile_picture ? <img src={p.profile_picture} alt="" className="w-full h-full object-cover" /> : p.username[0]?.toUpperCase()}
+          {isMe && (
+            <>
+              <button
+                type="button"
+                onClick={() => fileRef.current?.click()}
+                className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-xs transition-opacity"
+                title="Change profile picture"
+              >
+                <Camera size={20} />
+              </button>
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadPfp(f); }}
+              />
+            </>
+          )}
+          {uploadingPfp && <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-[10px]">Uploading…</div>}
         </div>
         <div className="flex-1 text-center md:text-left">
           <h1 className="font-horror text-3xl text-primary red-glow flex items-center gap-2 justify-center md:justify-start">
-            {p.display_name}{p.verified && <VerifiedBadge size={22} />}
+            {p.display_name}{p.verified && <VerifiedBadge size={22} title="Verified user" />}
           </h1>
           <p className="text-muted-foreground">@{p.username}</p>
           <p className="text-xs text-muted-foreground mt-1">Joined {new Date(p.join_date).toLocaleDateString()}</p>
@@ -126,16 +178,16 @@ function Profile() {
       <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
         <Stat label="Posted" value={posted.length} />
         <Stat label="Verified" value={verified.length} />
+        <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
         <Stat label="Friends" value={friendCount} />
         <Stat label="Total Views" value={totalViews} />
         <Stat label="Total Likes" value={totalLikes} />
-        <Stat label="Joined" value={new Date(p.join_date).getFullYear()} />
       </div>
 
       <div className="flex gap-2">
-        {(["posted", "verified"] as const).map((t) => (
+        {(isMe ? (["posted", "verified", "private"] as const) : (["posted", "verified"] as const)).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-md text-sm capitalize border ${tab === t ? "border-primary bg-primary/25 red-glow" : "border-primary/25 text-muted-foreground"}`}>
-            {t === "posted" ? "Posted Boxes" : "Verified Boxes"}
+            {t === "posted" ? "Posted" : t === "verified" ? "Verified" : `Private (${privateBoxes.length})`}
           </button>
         ))}
       </div>
@@ -144,8 +196,8 @@ function Profile() {
         <div className="skeleton h-40" />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
-          {(tab === "posted" ? posted : verified).map((b) => <BoxCard key={b.id} box={b} />)}
-          {(tab === "posted" ? posted : verified).length === 0 && (
+          {(tab === "posted" ? posted : tab === "verified" ? verified : privateBoxes).map((b) => <BoxCard key={b.id} box={b} />)}
+          {(tab === "posted" ? posted : tab === "verified" ? verified : privateBoxes).length === 0 && (
             <div className="glass p-6 text-center text-muted-foreground col-span-full">No boxes yet.</div>
           )}
         </div>

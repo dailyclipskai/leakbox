@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { toast } from "sonner";
-import { Upload } from "lucide-react";
+import { Upload, X, Image as ImageIcon, Video } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/post")({
   head: () => ({
@@ -20,9 +20,8 @@ export const Route = createFileRoute("/_authenticated/post")({
 function PostBox() {
   const { session, profile, isAdmin } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: "", description: "", discord_id: "", phone: "", gmail: "" });
-  const [file, setFile] = useState<File | null>(null);
-  const [preview, setPreview] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", description: "", discord_id: "", phone: "", gmail: "", visibility: "public" as "public" | "private" });
+  const [files, setFiles] = useState<File[]>([]);
   const [loading, setLoading] = useState(false);
   const [cooldownLeft, setCooldownLeft] = useState<number | null>(null);
 
@@ -44,19 +43,23 @@ function PostBox() {
     }
     setLoading(true);
     try {
-      let image_url: string | null = null;
-      if (file) {
-        const ext = file.name.split(".").pop() || "png";
+      const media: { path: string; kind: "image" | "video" }[] = [];
+      for (const f of files) {
+        const ext = f.name.split(".").pop() || "bin";
         const path = `${session.user.id}/${crypto.randomUUID()}.${ext}`;
-        const { error } = await supabase.storage.from("boxes").upload(path, file);
+        const { error } = await supabase.storage.from("boxes").upload(path, f);
         if (error) throw error;
-        image_url = `boxes/${path}`;
+        media.push({ path: `boxes/${path}`, kind: f.type.startsWith("video/") ? "video" : "image" });
       }
+      const cover = media.find((m) => m.kind === "image") ?? media[0];
+      const image_url = cover?.path ?? null;
       const { data: inserted, error: insErr } = await supabase.from("boxes").insert({
         author_id: session.user.id,
         name: form.name.trim(),
         description: form.description.trim(),
         image_url,
+        media,
+        visibility: form.visibility,
         discord_id: form.discord_id.trim() || null,
         phone: form.phone.trim() || null,
         gmail: form.gmail.trim() || null,
@@ -93,17 +96,52 @@ function PostBox() {
           <textarea className="leak-input mt-1 min-h-32" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={4000} />
         </div>
         <div>
-          <label className="text-xs text-muted-foreground">Image</label>
+          <label className="text-xs text-muted-foreground">Images & videos</label>
           <label className="mt-1 flex items-center justify-center gap-2 border border-dashed border-primary/40 rounded-md p-6 cursor-pointer hover:border-primary transition-colors">
             <Upload size={16} />
-            <span className="text-sm">{file ? file.name : "Click to upload"}</span>
-            <input type="file" accept="image/*" className="hidden" onChange={(e) => {
-              const f = e.target.files?.[0] ?? null;
-              setFile(f);
-              if (f) { const url = URL.createObjectURL(f); setPreview(url); }
-            }} />
+            <span className="text-sm">{files.length ? `${files.length} file${files.length !== 1 ? "s" : ""} selected` : "Click to upload — images and videos"}</span>
+            <input
+              type="file"
+              accept="image/*,video/*"
+              multiple
+              className="hidden"
+              onChange={(e) => setFiles((prev) => [...prev, ...Array.from(e.target.files ?? [])])}
+            />
           </label>
-          {preview && <img src={preview} alt="preview" className="mt-2 max-h-60 rounded-md border border-primary/30" />}
+          {files.length > 0 && (
+            <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {files.map((f, i) => (
+                <div key={i} className="relative border border-primary/30 rounded-md overflow-hidden bg-black/40">
+                  {f.type.startsWith("video/") ? (
+                    <div className="flex items-center justify-center h-24 text-xs text-muted-foreground"><Video size={16} className="mr-1" /> {f.name}</div>
+                  ) : (
+                    <img src={URL.createObjectURL(f)} alt="" className="w-full h-24 object-cover" />
+                  )}
+                  <button type="button" onClick={() => setFiles((prev) => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-black/70 rounded-full p-1 hover:bg-primary/60">
+                    <X size={12} />
+                  </button>
+                  <div className="absolute bottom-1 left-1 bg-black/70 rounded px-1 py-0.5 text-[10px] flex items-center gap-1">
+                    {f.type.startsWith("video/") ? <Video size={10} /> : <ImageIcon size={10} />}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div>
+          <label className="text-xs text-muted-foreground">Visibility</label>
+          <div className="mt-1 flex gap-2">
+            {(["public", "private"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setForm({ ...form, visibility: v })}
+                className={`px-3 py-1.5 rounded-md text-sm capitalize border ${form.visibility === v ? "border-primary bg-primary/25 red-glow" : "border-primary/25 text-muted-foreground"}`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>

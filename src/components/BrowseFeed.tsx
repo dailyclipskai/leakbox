@@ -16,7 +16,7 @@ export function BrowseFeed() {
     (async () => {
       let q = supabase
         .from("boxes")
-        .select("id, name, description, image_url, verified, views, likes, created_at, author_id, discord_id, phone, gmail, profiles:profiles!boxes_author_id_fkey(username, display_name, verified)")
+        .select("id, name, description, image_url, verified, views, likes, created_at, author_id, discord_id, phone, gmail, visibility, media, profiles:profiles!boxes_author_id_fkey(username, display_name, verified)")
         .limit(60);
       if (filter === "recent") q = q.order("created_at", { ascending: false });
       if (filter === "popular") q = q.order("views", { ascending: false });

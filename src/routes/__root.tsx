@@ -15,6 +15,7 @@ import { Header } from "../components/Header";
 import { CursorGlow } from "../components/CursorGlow";
 import { Toaster } from "sonner";
 import { AuthProvider } from "../lib/auth-context";
+import { AgeGate } from "../components/AgeGate";
 
 function NotFoundComponent() {
   return (
@@ -121,6 +122,7 @@ function RootComponent() {
           </footer>
         </div>
         <Toaster theme="dark" position="top-right" richColors />
+        <AgeGate />
       </AuthProvider>
     </QueryClientProvider>
   );

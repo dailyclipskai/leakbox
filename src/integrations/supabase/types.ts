@@ -76,10 +76,12 @@ export type Database = {
           id: string
           image_url: string | null
           likes: number
+          media: Json
           name: string
           phone: string | null
           verified: boolean
           views: number
+          visibility: string
         }
         Insert: {
           author_id: string
@@ -90,10 +92,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes?: number
+          media?: Json
           name: string
           phone?: string | null
           verified?: boolean
           views?: number
+          visibility?: string
         }
         Update: {
           author_id?: string
@@ -104,10 +108,12 @@ export type Database = {
           id?: string
           image_url?: string | null
           likes?: number
+          media?: Json
           name?: string
           phone?: string | null
           verified?: boolean
           views?: number
+          visibility?: string
         }
         Relationships: [
           {
