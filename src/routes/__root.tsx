@@ -16,6 +16,8 @@ import { CursorGlow } from "../components/CursorGlow";
 import { Toaster } from "sonner";
 import { AuthProvider } from "../lib/auth-context";
 import { AgeGate } from "../components/AgeGate";
+import { SiteSettingsProvider } from "../lib/site-settings";
+import { BanGate } from "../components/BanGate";
 
 function NotFoundComponent() {
   return (
@@ -108,6 +110,7 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
+      <SiteSettingsProvider>
       <AuthProvider>
         <div className="leak-bg" />
         <div className="leak-noise" />
@@ -123,7 +126,9 @@ function RootComponent() {
         </div>
         <Toaster theme="dark" position="top-right" richColors />
         <AgeGate />
+        <BanGate />
       </AuthProvider>
+      </SiteSettingsProvider>
     </QueryClientProvider>
   );
 }
