@@ -5,7 +5,8 @@ import { useAuth } from "@/lib/auth-context";
 import { BoxImage } from "@/components/BoxImage";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { highlight } from "@/lib/highlight";
-import { Eye, Heart, Share2, Calendar, ArrowLeft, ShieldCheck } from "lucide-react";
+import { signedUrl } from "@/lib/storage";
+import { Eye, Heart, Share2, Calendar, ArrowLeft, ShieldCheck, Trash2, Lock, Globe } from "lucide-react";
 import { toast } from "sonner";
 
 type Search = { q?: string };
@@ -23,10 +24,12 @@ export const Route = createFileRoute("/box/$id")({
   component: BoxPage,
 });
 
+type Media = { path: string; kind: "image" | "video" };
 type Box = {
   id: string; author_id: string; name: string; description: string; image_url: string | null;
   verified: boolean; views: number; likes: number; created_at: string;
   discord_id: string | null; phone: string | null; gmail: string | null;
+  visibility: "public" | "private"; media: Media[] | null;
   profiles?: { username: string; display_name: string; verified: boolean } | null;
 };
 
@@ -95,6 +98,24 @@ function BoxPage() {
     toast.success(`Box ${!box.verified ? "verified" : "unverified"}.`);
   }
 
+  async function toggleVisibility() {
+    if (!box) return;
+    const next = box.visibility === "public" ? "private" : "public";
+    const { error } = await supabase.from("boxes").update({ visibility: next }).eq("id", box.id);
+    if (error) return toast.error(error.message);
+    setBox({ ...box, visibility: next });
+    toast.success(`Box is now ${next}.`);
+  }
+
+  async function deleteBox() {
+    if (!box) return;
+    if (!confirm("Delete this box permanently?")) return;
+    const { error } = await supabase.from("boxes").delete().eq("id", box.id);
+    if (error) return toast.error(error.message);
+    toast.success("Box deleted.");
+    navigate({ to: "/" });
+  }
+
   const share = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
@@ -107,15 +128,30 @@ function BoxPage() {
   if (notFound) return <div className="max-w-2xl mx-auto p-10 text-center glass mt-8"><p className="text-muted-foreground">Box not found.</p></div>;
   if (!box) return <div className="max-w-3xl mx-auto p-4"><div className="skeleton h-96" /></div>;
 
+  const isOwner = !!session?.user && session.user.id === box.author_id;
+  const canDelete = isOwner || isAdmin;
+  const mediaList: Media[] = Array.isArray(box.media) ? box.media : [];
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
       <button onClick={() => navigate({ to: "/" })} className="btn-ghost mb-4 text-xs"><ArrowLeft size={14} /> Back</button>
       <div className="glass overflow-hidden fade-in">
         <div className="relative bg-black/60">
-          <BoxImage path={box.image_url} alt={box.name} className="w-full max-h-[560px] object-contain" fallbackClassName="w-full h-96" />
+          {mediaList.length > 0 ? (
+            <div className="grid gap-2 p-2 sm:grid-cols-2">
+              {mediaList.map((m, i) => <MediaTile key={i} media={m} />)}
+            </div>
+          ) : (
+            <BoxImage path={box.image_url} alt={box.name} className="w-full max-h-[560px] object-contain" fallbackClassName="w-full h-96" />
+          )}
           {box.verified && (
             <div className="absolute top-3 right-3 bg-black/70 backdrop-blur rounded-full p-1.5">
-              <VerifiedBadge size={28} />
+              <VerifiedBadge size={28} title="Verified box" />
+            </div>
+          )}
+          {box.visibility === "private" && (
+            <div className="absolute top-3 left-3 flex items-center gap-1 bg-black/70 backdrop-blur rounded-full px-2 py-1 text-xs text-primary">
+              <Lock size={12} /> Private
             </div>
           )}
         </div>
@@ -123,7 +159,7 @@ function BoxPage() {
           <div className="flex items-start justify-between gap-4 flex-wrap">
             <h1 className="font-horror text-3xl md:text-4xl text-primary red-glow flex items-center gap-2">
               {highlight(box.name, hlTargets.q)}
-              {box.verified && <VerifiedBadge size={24} />}
+              {box.verified && <VerifiedBadge size={24} title="Verified box" />}
             </h1>
             <div className="flex items-center gap-2">
               <button onClick={toggleLike} className={`btn-ghost ${liked ? "!text-primary !border-primary" : ""}`}>
@@ -133,6 +169,14 @@ function BoxPage() {
               {isAdmin && (
                 <button onClick={adminVerify} className="btn-red !py-1.5 !px-3 text-xs"><ShieldCheck size={14} /> {box.verified ? "Unverify" : "Verify"}</button>
               )}
+              {isOwner && (
+                <button onClick={toggleVisibility} className="btn-ghost text-xs">
+                  {box.visibility === "public" ? <><Lock size={14} /> Make private</> : <><Globe size={14} /> Make public</>}
+                </button>
+              )}
+              {canDelete && (
+                <button onClick={deleteBox} className="btn-red !py-1.5 !px-3 text-xs"><Trash2 size={14} /> Delete</button>
+              )}
             </div>
           </div>
 
@@ -140,7 +184,7 @@ function BoxPage() {
             <span className="flex items-center gap-1"><Eye size={14} /> {box.views.toLocaleString()} views</span>
             <span className="flex items-center gap-1"><Calendar size={14} /> {new Date(box.created_at).toLocaleDateString()}</span>
             <Link to="/u/$username" params={{ username: box.profiles?.username ?? "" }} className="text-foreground hover:text-primary">
-              @{box.profiles?.username}{box.profiles?.verified && <VerifiedBadge size={12} className="inline ml-1" />}
+              @{box.profiles?.username}{box.profiles?.verified && <VerifiedBadge size={12} className="inline ml-1" title="Verified user" />}
             </Link>
           </div>
 
@@ -160,4 +204,18 @@ function BoxPage() {
       </div>
     </div>
   );
+}
+
+function MediaTile({ media }: { media: Media }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    signedUrl(media.path).then((u) => alive && setUrl(u));
+    return () => { alive = false; };
+  }, [media.path]);
+  if (!url) return <div className="skeleton h-64 rounded-md" />;
+  if (media.kind === "video") {
+    return <video src={url} controls className="w-full max-h-[560px] rounded-md bg-black" />;
+  }
+  return <img src={url} alt="" className="w-full max-h-[560px] object-contain rounded-md bg-black" loading="lazy" />;
 }
