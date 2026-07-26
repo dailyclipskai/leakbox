@@ -72,8 +72,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:title", content: "BoxLeak — Browse boxes" },
       { name: "twitter:description", content: "LeakBox Central is a website for discovering and sharing community-created \"boxes\" of information." },
-      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/43953b20-b9b4-48e7-a37a-e2a55890c358/id-preview-f81ec7a8--04158958-3b6e-4f3a-a146-6254cf3b195c.lovable.app-1785088162786.png" },
-      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/43953b20-b9b4-48e7-a37a-e2a55890c358/id-preview-f81ec7a8--04158958-3b6e-4f3a-a146-6254cf3b195c.lovable.app-1785088162786.png" },
+      { property: "og:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/569f9874-8575-4824-83ea-e70d1d1dbbe2/id-preview-ad25e994--04158958-3b6e-4f3a-a146-6254cf3b195c.lovable.app-1785090346183.png" },
+      { name: "twitter:image", content: "https://pub-bb2e103a32db4e198524a2e9ed8f35b4.r2.dev/569f9874-8575-4824-83ea-e70d1d1dbbe2/id-preview-ad25e994--04158958-3b6e-4f3a-a146-6254cf3b195c.lovable.app-1785090346183.png" },
     ],
     links: [
       {
