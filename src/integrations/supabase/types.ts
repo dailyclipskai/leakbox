@@ -244,23 +244,41 @@ export type Database = {
       }
       site_settings: {
         Row: {
+          background_color: string
+          border_color: string
+          foreground_color: string
           id: number
           logo_url: string | null
+          muted_color: string
           primary_color: string
+          site_name: string
+          surface_color: string
           updated_at: string
           updated_by: string | null
         }
         Insert: {
+          background_color?: string
+          border_color?: string
+          foreground_color?: string
           id?: number
           logo_url?: string | null
+          muted_color?: string
           primary_color?: string
+          site_name?: string
+          surface_color?: string
           updated_at?: string
           updated_by?: string | null
         }
         Update: {
+          background_color?: string
+          border_color?: string
+          foreground_color?: string
           id?: number
           logo_url?: string | null
+          muted_color?: string
           primary_color?: string
+          site_name?: string
+          surface_color?: string
           updated_at?: string
           updated_by?: string | null
         }

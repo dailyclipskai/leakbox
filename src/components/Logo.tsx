@@ -1,17 +1,16 @@
-import defaultLogo from "@/assets/logo.gif";
+import defaultLogoAsset from "@/assets/skull-star-logo.png.asset.json";
 import { useSiteSettings } from "@/lib/site-settings";
 
 export function Logo({ size = 40, className = "" }: { size?: number; className?: string }) {
   const { settings } = useSiteSettings();
-  const src = settings.logo_url || defaultLogo;
-  const custom = !!settings.logo_url;
+  const src = settings.logo_url || defaultLogoAsset.url;
   return (
     <img
       src={src}
-      alt="LeakBox logo"
+      alt={`${settings.site_name} logo`}
       width={size}
       height={size}
-      className={`${custom ? "" : "logo-red"} inline-block ${className}`}
+      className={`logo-red inline-block ${className}`}
       style={{ height: size, width: "auto" }}
     />
   );
