@@ -77,7 +77,7 @@ function Auth() {
     setLoading(false);
     if (error) return toast.error(error.message);
     await refresh();
-    toast.success("Account created. Welcome to LeakBox.");
+    toast.success("Account created. Welcome!");
     navigate({ to: "/" });
   }
 
