@@ -33,6 +33,8 @@ function Profile() {
   const [rank, setRank] = useState<number | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
   const [uploadingPfp, setUploadingPfp] = useState(false);
+  const [editingBio, setEditingBio] = useState(false);
+  const [bioDraft, setBioDraft] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -125,10 +127,21 @@ function Profile() {
     finally { setUploadingPfp(false); }
   }
 
+  async function saveBio() {
+    if (!p) return;
+    const bio = bioDraft.trim().slice(0, 300) || null;
+    const { error } = await supabase.from("profiles").update({ bio }).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    setP({ ...p, bio });
+    setEditingBio(false);
+    await refresh();
+    toast.success("Bio updated.");
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
       <div className="glass p-6 flex flex-col md:flex-row items-center gap-6 fade-in">
-        <div className="relative w-24 h-24 rounded-full bg-primary/20 border-2 border-primary/60 overflow-hidden flex items-center justify-center text-3xl font-horror text-primary group">
+        <div className="relative w-24 h-24 rounded-full bg-muted border border-border overflow-hidden flex items-center justify-center text-3xl font-horror group shrink-0">
           {p.profile_picture ? <img src={p.profile_picture} alt="" className="w-full h-full object-cover" /> : p.username[0]?.toUpperCase()}
           {isMe && (
             <>
@@ -152,11 +165,36 @@ function Profile() {
           {uploadingPfp && <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-[10px]">Uploading…</div>}
         </div>
         <div className="flex-1 text-center md:text-left">
-          <h1 className="font-horror text-3xl text-primary red-glow flex items-center gap-2 justify-center md:justify-start">
+          <h1 className="font-horror text-3xl flex items-center gap-2 justify-center md:justify-start">
             {p.display_name}{p.verified && <VerifiedBadge size={22} title="Verified user" />}
           </h1>
           <p className="text-muted-foreground">@{p.username}</p>
           <p className="text-xs text-muted-foreground mt-1">Joined {new Date(p.join_date).toLocaleDateString()}</p>
+          {editingBio ? (
+            <div className="mt-2 space-y-2">
+              <textarea
+                value={bioDraft}
+                onChange={(e) => setBioDraft(e.target.value)}
+                maxLength={300}
+                rows={3}
+                placeholder="Tell people about yourself..."
+                className="leak-input text-sm"
+              />
+              <div className="flex gap-2 justify-center md:justify-start">
+                <button onClick={saveBio} className="btn-red text-xs">Save bio</button>
+                <button onClick={() => setEditingBio(false)} className="btn-ghost text-xs">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-2">
+              {p.bio ? <p className="text-sm whitespace-pre-wrap">{p.bio}</p> : isMe && <p className="text-sm text-muted-foreground">No bio yet.</p>}
+              {isMe && (
+                <button onClick={() => { setBioDraft(p.bio ?? ""); setEditingBio(true); }} className="text-xs text-muted-foreground hover:text-foreground underline mt-1">
+                  {p.bio ? "Edit bio" : "Add a bio"}
+                </button>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex flex-col gap-2">
           {!isMe && session && (
@@ -186,7 +224,7 @@ function Profile() {
 
       <div className="flex gap-2">
         {(isMe ? (["posted", "verified", "private"] as const) : (["posted", "verified"] as const)).map((t) => (
-          <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-md text-sm capitalize border ${tab === t ? "border-primary bg-primary/25 red-glow" : "border-primary/25 text-muted-foreground"}`}>
+          <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-md text-sm capitalize border ${tab === t ? "border-border bg-accent" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             {t === "posted" ? "Posted" : t === "verified" ? "Verified" : `Private (${privateBoxes.length})`}
           </button>
         ))}
@@ -209,7 +247,7 @@ function Profile() {
 function Stat({ label, value }: { label: string; value: number | string }) {
   return (
     <div className="glass p-3 text-center">
-      <div className="text-xl font-horror text-primary red-glow">{value}</div>
+      <div className="text-xl font-horror">{value}</div>
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{label}</div>
     </div>
   );
