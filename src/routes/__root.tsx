@@ -16,7 +16,7 @@ import { CursorGlow } from "../components/CursorGlow";
 import { Toaster } from "sonner";
 import { AuthProvider } from "../lib/auth-context";
 import { AgeGate } from "../components/AgeGate";
-import { SiteSettingsProvider } from "../lib/site-settings";
+import { SiteSettingsProvider, useSiteSettings } from "../lib/site-settings";
 import { BanGate } from "../components/BanGate";
 
 function NotFoundComponent() {
@@ -121,9 +121,7 @@ function RootComponent() {
           <main className="flex-1 relative z-[2]">
             <Outlet />
           </main>
-          <footer className="text-center text-xs text-muted-foreground py-6 relative z-[2]">
-            LeakBox — community leaks, verified by @leak
-          </footer>
+          <SiteFooter />
         </div>
         <Toaster theme="dark" position="top-right" richColors />
         <AgeGate />
@@ -131,5 +129,14 @@ function RootComponent() {
       </AuthProvider>
       </SiteSettingsProvider>
     </QueryClientProvider>
+  );
+}
+
+function SiteFooter() {
+  const { settings, loaded } = useSiteSettings();
+  return (
+    <footer className="text-center text-xs text-muted-foreground py-6 relative z-[2]">
+      {loaded ? `${settings.site_name} — community boxes` : ""}
+    </footer>
   );
 }

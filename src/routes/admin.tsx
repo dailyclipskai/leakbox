@@ -2,7 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
-import { useSiteSettings } from "@/lib/site-settings";
+import { useSiteSettings, DEFAULT_SETTINGS, type SiteSettings } from "@/lib/site-settings";
 import { toast } from "sonner";
 import { ShieldCheck, Ban, Check, Palette, Image as ImageIcon } from "lucide-react";
 
@@ -25,13 +25,9 @@ function Admin() {
   const [pendingBoxes, setPendingBoxes] = useState<Array<{ id: string; name: string; profiles: { username: string } | null }>>([]);
   const [users, setUsers] = useState<Array<{ id: string; username: string; display_name: string; banned: boolean; verified: boolean }>>([]);
   const [userQuery, setUserQuery] = useState("");
-  const [logoUrl, setLogoUrl] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("");
+  const [draft, setDraft] = useState<SiteSettings>(DEFAULT_SETTINGS);
 
-  useEffect(() => {
-    setLogoUrl(settings.logo_url ?? "");
-    setPrimaryColor(settings.primary_color);
-  }, [settings.logo_url, settings.primary_color]);
+  useEffect(() => { setDraft(settings); }, [settings]);
 
   async function load() {
     const { data: vr } = await supabase.from("verification_requests").select("*").eq("status", "pending");
@@ -70,13 +66,23 @@ function Admin() {
 
   async function saveSettings() {
     const { error } = await supabase.from("site_settings").update({
-      logo_url: logoUrl.trim() || null,
-      primary_color: primaryColor.trim() || "oklch(0.52 0.22 25)",
+      site_name: draft.site_name.trim() || DEFAULT_SETTINGS.site_name,
+      logo_url: draft.logo_url?.trim() || null,
+      primary_color: draft.primary_color.trim() || DEFAULT_SETTINGS.primary_color,
+      background_color: draft.background_color.trim() || DEFAULT_SETTINGS.background_color,
+      surface_color: draft.surface_color.trim() || DEFAULT_SETTINGS.surface_color,
+      foreground_color: draft.foreground_color.trim() || DEFAULT_SETTINGS.foreground_color,
+      muted_color: draft.muted_color.trim() || DEFAULT_SETTINGS.muted_color,
+      border_color: draft.border_color.trim() || DEFAULT_SETTINGS.border_color,
       updated_at: new Date().toISOString(),
     }).eq("id", 1);
     if (error) return toast.error(error.message);
     toast.success("Site updated for everyone.");
     refreshSettings();
+  }
+
+  async function resetTheme() {
+    setDraft({ ...draft, ...DEFAULT_SETTINGS, site_name: draft.site_name, logo_url: draft.logo_url });
   }
 
   const filteredUsers = users.filter((u) => {
@@ -87,30 +93,45 @@ function Admin() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
-      <h1 className="font-horror text-3xl text-primary red-glow flex items-center gap-2"><ShieldCheck /> Admin Panel</h1>
+      <h1 className="font-horror text-3xl flex items-center gap-2"><ShieldCheck /> Admin Panel</h1>
 
-      <section className="glass p-5 space-y-3">
-        <h2 className="font-horror text-xl text-primary flex items-center gap-2"><Palette size={18} /> Site theme & logo</h2>
+      <section className="glass p-5 space-y-4">
+        <h2 className="font-horror text-xl flex items-center gap-2"><Palette size={18} /> Site identity & theme</h2>
         <p className="text-xs text-muted-foreground">Applied globally to every visitor in real time.</p>
-        <label className="block text-xs text-muted-foreground">Logo URL (leave empty for default)</label>
-        <div className="flex gap-2 items-center">
-          <ImageIcon size={16} className="text-primary" />
-          <input value={logoUrl} onChange={(e) => setLogoUrl(e.target.value)} placeholder="https://..." className="leak-input flex-1" />
-          {logoUrl && <img src={logoUrl} alt="preview" className="w-10 h-10 object-contain bg-black/40 rounded" />}
+
+        <div className="space-y-1">
+          <label className="block text-xs text-muted-foreground">Website name</label>
+          <input value={draft.site_name} onChange={(e) => setDraft({ ...draft, site_name: e.target.value })} placeholder="Website name" className="leak-input" />
         </div>
-        <label className="block text-xs text-muted-foreground">Primary color (CSS color: hex, oklch, hsl...)</label>
-        <div className="flex gap-2 items-center">
-          <span className="inline-block w-6 h-6 rounded border border-primary/40" style={{ background: primaryColor }} />
-          <input value={primaryColor} onChange={(e) => setPrimaryColor(e.target.value)} placeholder="#ff2a2a or oklch(0.52 0.22 25)" className="leak-input flex-1" />
-          <input type="color" onChange={(e) => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded bg-transparent border border-primary/40 cursor-pointer" title="Color picker" />
+
+        <div className="space-y-1">
+          <label className="block text-xs text-muted-foreground">Logo URL (leave empty for default)</label>
+          <div className="flex gap-2 items-center">
+            <ImageIcon size={16} />
+            <input value={draft.logo_url ?? ""} onChange={(e) => setDraft({ ...draft, logo_url: e.target.value })} placeholder="https://..." className="leak-input flex-1" />
+            {draft.logo_url && <img src={draft.logo_url} alt="Logo preview" className="w-10 h-10 object-contain bg-muted rounded" />}
+          </div>
         </div>
-        <button className="btn-red" onClick={saveSettings}>Save theme</button>
+
+        <div className="grid gap-3 sm:grid-cols-2">
+          <ColorField label="Background" value={draft.background_color} onChange={(v) => setDraft({ ...draft, background_color: v })} />
+          <ColorField label="Surface / cards" value={draft.surface_color} onChange={(v) => setDraft({ ...draft, surface_color: v })} />
+          <ColorField label="Text" value={draft.foreground_color} onChange={(v) => setDraft({ ...draft, foreground_color: v })} />
+          <ColorField label="Muted text" value={draft.muted_color} onChange={(v) => setDraft({ ...draft, muted_color: v })} />
+          <ColorField label="Borders" value={draft.border_color} onChange={(v) => setDraft({ ...draft, border_color: v })} />
+          <ColorField label="Primary / buttons" value={draft.primary_color} onChange={(v) => setDraft({ ...draft, primary_color: v })} />
+        </div>
+
+        <div className="flex gap-2">
+          <button className="btn-red" onClick={saveSettings}>Save for everyone</button>
+          <button className="btn-ghost" onClick={resetTheme}>Reset colors</button>
+        </div>
       </section>
 
       <section className="glass p-5 space-y-3">
-        <h2 className="font-horror text-xl text-primary">Verification requests</h2>
+        <h2 className="font-horror text-xl">Verification requests</h2>
         {reqs.length === 0 ? <div className="text-sm text-muted-foreground">No pending requests.</div> : reqs.map((r) => (
-          <div key={r.id} className="flex items-center gap-3 border-t border-primary/20 pt-3">
+          <div key={r.id} className="flex items-center gap-3 border-t border-border pt-3">
             <div className="flex-1">
               <div>{r.profile.display_name}</div>
               <div className="text-xs text-muted-foreground">@{r.profile.username} · {new Date(r.created_at).toLocaleDateString()}</div>
@@ -122,9 +143,9 @@ function Admin() {
       </section>
 
       <section className="glass p-5 space-y-3">
-        <h2 className="font-horror text-xl text-primary">Recent unverified boxes</h2>
+        <h2 className="font-horror text-xl">Recent unverified boxes</h2>
         {pendingBoxes.length === 0 ? <div className="text-sm text-muted-foreground">Nothing to verify.</div> : pendingBoxes.map((b) => (
-          <div key={b.id} className="flex items-center gap-3 border-t border-primary/20 pt-3">
+          <div key={b.id} className="flex items-center gap-3 border-t border-border pt-3">
             <div className="flex-1 min-w-0"><Link to="/box/$id" params={{ id: b.id }} className="hover:text-primary truncate block">{b.name}</Link><div className="text-xs text-muted-foreground">@{b.profiles?.username}</div></div>
             <button className="btn-red text-xs" onClick={() => verifyBox(b.id)}>Verify</button>
           </div>
@@ -132,11 +153,11 @@ function Admin() {
       </section>
 
       <section className="glass p-5 space-y-3">
-        <h2 className="font-horror text-xl text-primary flex items-center gap-2"><Ban size={18} /> User management</h2>
+        <h2 className="font-horror text-xl flex items-center gap-2"><Ban size={18} /> User management</h2>
         <input value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder="Search users..." className="leak-input w-full" />
         <div className="max-h-96 overflow-y-auto space-y-2">
           {filteredUsers.map((u) => (
-            <div key={u.id} className="flex items-center gap-3 border-t border-primary/20 pt-3">
+            <div key={u.id} className="flex items-center gap-3 border-t border-border pt-3">
               <div className="flex-1 min-w-0">
                 <Link to="/u/$username" params={{ username: u.username }} className="hover:text-primary truncate block">{u.display_name}</Link>
                 <div className="text-xs text-muted-foreground">@{u.username}{u.banned && <span className="ml-2 text-primary">· BANNED</span>}</div>
@@ -149,6 +170,19 @@ function Admin() {
           {filteredUsers.length === 0 && <div className="text-sm text-muted-foreground">No users.</div>}
         </div>
       </section>
+    </div>
+  );
+}
+
+function ColorField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+  return (
+    <div className="space-y-1">
+      <label className="block text-xs text-muted-foreground">{label}</label>
+      <div className="flex gap-2 items-center">
+        <span className="inline-block w-8 h-8 rounded border border-border shrink-0" style={{ background: value }} />
+        <input value={value} onChange={(e) => onChange(e.target.value)} className="leak-input flex-1 !py-1.5 text-xs" />
+        <input type="color" onChange={(e) => onChange(e.target.value)} className="w-8 h-8 rounded bg-transparent border border-border cursor-pointer shrink-0" title={`Pick ${label.toLowerCase()} color`} />
+      </div>
     </div>
   );
 }

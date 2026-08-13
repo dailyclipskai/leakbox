@@ -65,8 +65,20 @@ export function SiteSettingsProvider({ children }: { children: ReactNode }) {
     s.setProperty("--border", settings.border_color);
   }, [settings]);
 
+  // Keep the document title in sync with the configured site name, even when
+  // route-level head() metadata writes a title containing the old default.
   useEffect(() => {
-    if (loaded) document.title = settings.site_name;
+    if (!loaded) return;
+    const apply = () => {
+      const next = document.title.replace(/LeakBox|BoxLeak/g, settings.site_name);
+      if (next !== document.title) document.title = next;
+    };
+    apply();
+    const el = document.querySelector("title");
+    if (!el) return;
+    const obs = new MutationObserver(apply);
+    obs.observe(el, { childList: true });
+    return () => obs.disconnect();
   }, [loaded, settings.site_name]);
 
   return <Ctx.Provider value={{ settings, loaded, refresh }}>{children}</Ctx.Provider>;

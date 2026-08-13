@@ -9,11 +9,9 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as UsersRouteImport } from './routes/users'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as NotificationsRouteImport } from './routes/notifications'
-import { Route as MessagesRouteImport } from './routes/messages'
-import { Route as FriendsRouteImport } from './routes/friends'
+import { Route as ConnectionsRouteImport } from './routes/connections'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -24,11 +22,6 @@ import { Route as MessagesUserIdRouteImport } from './routes/messages.$userId'
 import { Route as BoxIdRouteImport } from './routes/box.$id'
 import { Route as AuthenticatedPostRouteImport } from './routes/_authenticated/post'
 
-const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -39,14 +32,9 @@ const NotificationsRoute = NotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MessagesRoute = MessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FriendsRoute = FriendsRouteImport.update({
-  id: '/friends',
-  path: '/friends',
+const ConnectionsRoute = ConnectionsRouteImport.update({
+  id: '/connections',
+  path: '/connections',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BrowseRoute = BrowseRouteImport.update({
@@ -79,9 +67,9 @@ const UUsernameRoute = UUsernameRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const MessagesUserIdRoute = MessagesUserIdRouteImport.update({
-  id: '/$userId',
-  path: '/$userId',
-  getParentRoute: () => MessagesRoute,
+  id: '/messages/$userId',
+  path: '/messages/$userId',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const BoxIdRoute = BoxIdRouteImport.update({
   id: '/box/$id',
@@ -99,11 +87,9 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/browse': typeof BrowseRoute
-  '/friends': typeof FriendsRoute
-  '/messages': typeof MessagesRouteWithChildren
+  '/connections': typeof ConnectionsRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
   '/post': typeof AuthenticatedPostRoute
   '/box/$id': typeof BoxIdRoute
   '/messages/$userId': typeof MessagesUserIdRoute
@@ -114,11 +100,9 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/browse': typeof BrowseRoute
-  '/friends': typeof FriendsRoute
-  '/messages': typeof MessagesRouteWithChildren
+  '/connections': typeof ConnectionsRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
   '/post': typeof AuthenticatedPostRoute
   '/box/$id': typeof BoxIdRoute
   '/messages/$userId': typeof MessagesUserIdRoute
@@ -131,11 +115,9 @@ export interface FileRoutesById {
   '/admin': typeof AdminRoute
   '/auth': typeof AuthRoute
   '/browse': typeof BrowseRoute
-  '/friends': typeof FriendsRoute
-  '/messages': typeof MessagesRouteWithChildren
+  '/connections': typeof ConnectionsRoute
   '/notifications': typeof NotificationsRoute
   '/profile': typeof ProfileRoute
-  '/users': typeof UsersRoute
   '/_authenticated/post': typeof AuthenticatedPostRoute
   '/box/$id': typeof BoxIdRoute
   '/messages/$userId': typeof MessagesUserIdRoute
@@ -148,11 +130,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/browse'
-    | '/friends'
-    | '/messages'
+    | '/connections'
     | '/notifications'
     | '/profile'
-    | '/users'
     | '/post'
     | '/box/$id'
     | '/messages/$userId'
@@ -163,11 +143,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/browse'
-    | '/friends'
-    | '/messages'
+    | '/connections'
     | '/notifications'
     | '/profile'
-    | '/users'
     | '/post'
     | '/box/$id'
     | '/messages/$userId'
@@ -179,11 +157,9 @@ export interface FileRouteTypes {
     | '/admin'
     | '/auth'
     | '/browse'
-    | '/friends'
-    | '/messages'
+    | '/connections'
     | '/notifications'
     | '/profile'
-    | '/users'
     | '/_authenticated/post'
     | '/box/$id'
     | '/messages/$userId'
@@ -196,24 +172,16 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRoute
   AuthRoute: typeof AuthRoute
   BrowseRoute: typeof BrowseRoute
-  FriendsRoute: typeof FriendsRoute
-  MessagesRoute: typeof MessagesRouteWithChildren
+  ConnectionsRoute: typeof ConnectionsRoute
   NotificationsRoute: typeof NotificationsRoute
   ProfileRoute: typeof ProfileRoute
-  UsersRoute: typeof UsersRoute
   BoxIdRoute: typeof BoxIdRoute
+  MessagesUserIdRoute: typeof MessagesUserIdRoute
   UUsernameRoute: typeof UUsernameRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -228,18 +196,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/messages': {
-      id: '/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof MessagesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/friends': {
-      id: '/friends'
-      path: '/friends'
-      fullPath: '/friends'
-      preLoaderRoute: typeof FriendsRouteImport
+    '/connections': {
+      id: '/connections'
+      path: '/connections'
+      fullPath: '/connections'
+      preLoaderRoute: typeof ConnectionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/browse': {
@@ -286,10 +247,10 @@ declare module '@tanstack/react-router' {
     }
     '/messages/$userId': {
       id: '/messages/$userId'
-      path: '/$userId'
+      path: '/messages/$userId'
       fullPath: '/messages/$userId'
       preLoaderRoute: typeof MessagesUserIdRouteImport
-      parentRoute: typeof MessagesRoute
+      parentRoute: typeof rootRouteImport
     }
     '/box/$id': {
       id: '/box/$id'
@@ -319,30 +280,17 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
 const AuthenticatedRouteRouteWithChildren =
   AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
 
-interface MessagesRouteChildren {
-  MessagesUserIdRoute: typeof MessagesUserIdRoute
-}
-
-const MessagesRouteChildren: MessagesRouteChildren = {
-  MessagesUserIdRoute: MessagesUserIdRoute,
-}
-
-const MessagesRouteWithChildren = MessagesRoute._addFileChildren(
-  MessagesRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AdminRoute: AdminRoute,
   AuthRoute: AuthRoute,
   BrowseRoute: BrowseRoute,
-  FriendsRoute: FriendsRoute,
-  MessagesRoute: MessagesRouteWithChildren,
+  ConnectionsRoute: ConnectionsRoute,
   NotificationsRoute: NotificationsRoute,
   ProfileRoute: ProfileRoute,
-  UsersRoute: UsersRoute,
   BoxIdRoute: BoxIdRoute,
+  MessagesUserIdRoute: MessagesUserIdRoute,
   UUsernameRoute: UUsernameRoute,
 }
 export const routeTree = rootRouteImport
