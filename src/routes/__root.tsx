@@ -18,6 +18,7 @@ import { AuthProvider } from "../lib/auth-context";
 import { AgeGate } from "../components/AgeGate";
 import { SiteSettingsProvider, useSiteSettings } from "../lib/site-settings";
 import { BanGate } from "../components/BanGate";
+import { PageTransition } from "../components/PageTransition";
 
 function NotFoundComponent() {
   return (
@@ -122,6 +123,7 @@ function RootComponent() {
           </main>
           <SiteFooter />
         </div>
+        <PageTransition />
         <Toaster theme="dark" position="top-right" richColors />
         <AgeGate />
         <BanGate />
