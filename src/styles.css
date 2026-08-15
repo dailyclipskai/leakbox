@@ -185,3 +185,32 @@ input.leak-input:focus, textarea.leak-input:focus { border-color: var(--muted-fo
   border-radius: var(--radius-md);
 }
 @keyframes shimmer { 0%,100% { opacity: 0.5; } 50% { opacity: 0.9; } }
+
+/* Page transition */
+.page-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: color-mix(in oklch, var(--background) 88%, transparent);
+  animation: ptFade 0.56s ease forwards;
+}
+.page-transition-logo { animation: ptLogo 0.56s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+@keyframes ptFade {
+  0% { opacity: 0; }
+  25% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes ptLogo {
+  0% { opacity: 0; transform: scale(0.86); }
+  30% { opacity: 1; transform: scale(1); }
+  70% { opacity: 1; transform: scale(1.02); }
+  100% { opacity: 0; transform: scale(1.08); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .page-transition { display: none; }
+}
+.page-enter { animation: leakFadeIn 0.3s ease-out both; }
