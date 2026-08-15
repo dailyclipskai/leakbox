@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      box_comments: {
+        Row: {
+          box_id: string
+          content: string
+          created_at: string
+          id: string
+          likes: number
+          parent_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          box_id: string
+          content: string
+          created_at?: string
+          id?: string
+          likes?: number
+          parent_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          box_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          likes?: number
+          parent_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "box_comments_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "boxes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "box_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "box_comments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "box_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      box_guest_views: {
+        Row: {
+          box_id: string
+          token: string
+          viewed_at: string
+        }
+        Insert: {
+          box_id: string
+          token: string
+          viewed_at?: string
+        }
+        Update: {
+          box_id?: string
+          token?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "box_guest_views_box_id_fkey"
+            columns: ["box_id"]
+            isOneToOne: false
+            referencedRelation: "boxes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       box_likes: {
         Row: {
           box_id: string
@@ -69,6 +150,7 @@ export type Database = {
       boxes: {
         Row: {
           author_id: string
+          comments_enabled: boolean
           created_at: string
           description: string
           discord_id: string | null
@@ -85,6 +167,7 @@ export type Database = {
         }
         Insert: {
           author_id: string
+          comments_enabled?: boolean
           created_at?: string
           description?: string
           discord_id?: string | null
@@ -101,6 +184,7 @@ export type Database = {
         }
         Update: {
           author_id?: string
+          comments_enabled?: boolean
           created_at?: string
           description?: string
           discord_id?: string | null
@@ -121,6 +205,32 @@ export type Database = {
             columns: ["author_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      comment_likes: {
+        Row: {
+          comment_id: string
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "comment_likes_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "box_comments"
             referencedColumns: ["id"]
           },
         ]
@@ -339,6 +449,10 @@ export type Database = {
         Returns: boolean
       }
       increment_box_views: { Args: { _box_id: string }; Returns: number }
+      increment_box_views_guest: {
+        Args: { _box_id: string; _token: string }
+        Returns: number
+      }
       is_admin: { Args: never; Returns: boolean }
       recount_box_likes: { Args: { _box_id: string }; Returns: undefined }
     }
