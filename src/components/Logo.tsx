@@ -1,9 +1,9 @@
-import defaultLogoAsset from "@/assets/skull-star-logo.png.asset.json";
 import { useSiteSettings } from "@/lib/site-settings";
 
 export function Logo({ size = 40, className = "" }: { size?: number; className?: string }) {
-  const { settings } = useSiteSettings();
-  const src = settings.logo_url || defaultLogoAsset.url;
+  const { settings, loaded } = useSiteSettings();
+  const src = settings.logo_url;
+  if (!loaded || !src) return null;
   return (
     <img
       src={src}
