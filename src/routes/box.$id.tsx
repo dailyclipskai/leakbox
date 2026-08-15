@@ -6,8 +6,10 @@ import { BoxImage } from "@/components/BoxImage";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { highlight } from "@/lib/highlight";
 import { signedUrl } from "@/lib/storage";
-import { Eye, Heart, Share2, Calendar, ArrowLeft, ShieldCheck, Trash2, Lock, Globe } from "lucide-react";
+import { Eye, Heart, Share2, Calendar, ArrowLeft, ShieldCheck, Trash2, Lock, Globe, MessageSquare, MessageSquareOff } from "lucide-react";
 import { toast } from "sonner";
+import { BoxComments } from "@/components/BoxComments";
+import { guestToken } from "@/lib/guest-token";
 
 type Search = { q?: string };
 
@@ -30,6 +32,7 @@ type Box = {
   verified: boolean; views: number; likes: number; created_at: string;
   discord_id: string | null; phone: string | null; gmail: string | null;
   visibility: "public" | "private"; media: Media[] | null;
+  comments_enabled: boolean;
   profiles?: { username: string; display_name: string; verified: boolean } | null;
 };
 
@@ -70,8 +73,9 @@ function BoxPage() {
         const { data: like } = await supabase.from("box_likes").select("box_id").eq("box_id", id).eq("user_id", session.user.id).maybeSingle();
         setLiked(!!like);
       } else {
-        await supabase.rpc("increment_box_views", { _box_id: id });
-        setBox((b) => (b ? { ...b, views: b.views + 1 } : b));
+        // guests: one view per device per box (prevents refresh farming)
+        const { data: v } = await supabase.rpc("increment_box_views_guest", { _box_id: id, _token: guestToken() });
+        if (typeof v === "number") setBox((b) => (b ? { ...b, views: v } : b));
       }
     })();
     return () => { alive = false; };
@@ -110,6 +114,15 @@ function BoxPage() {
     toast.success(`Box is now ${next}.`);
   }
 
+  async function toggleComments() {
+    if (!box) return;
+    const next = !box.comments_enabled;
+    const { error } = await supabase.from("boxes").update({ comments_enabled: next }).eq("id", box.id);
+    if (error) return toast.error(error.message);
+    setBox({ ...box, comments_enabled: next });
+    toast.success(next ? "Comments turned on." : "Comments turned off.");
+  }
+
   async function deleteBox() {
     if (!box) return;
     if (!confirm("Delete this box permanently?")) return;
@@ -134,6 +147,7 @@ function BoxPage() {
   const isOwner = !!session?.user && session.user.id === box.author_id;
   const canDelete = isOwner || isAdmin;
   const mediaList: Media[] = Array.isArray(box.media) ? box.media : [];
+  const singleMedia = mediaList.length === 1;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
@@ -141,8 +155,8 @@ function BoxPage() {
       <div className="glass overflow-hidden fade-in">
         <div className="relative bg-black/60">
           {mediaList.length > 0 ? (
-            <div className="grid gap-2 p-2 sm:grid-cols-2">
-              {mediaList.map((m, i) => <MediaTile key={i} media={m} />)}
+            <div className={`grid gap-2 p-2 ${singleMedia ? "grid-cols-1" : "sm:grid-cols-2"}`}>
+              {mediaList.map((m, i) => <MediaTile key={i} media={m} full={singleMedia} />)}
             </div>
           ) : (
             <BoxImage path={box.image_url} alt={box.name} className="w-full max-h-[560px] object-contain" fallbackClassName="w-full h-96" />
@@ -177,6 +191,11 @@ function BoxPage() {
                   {box.visibility === "public" ? <><Lock size={14} /> Make private</> : <><Globe size={14} /> Make public</>}
                 </button>
               )}
+              {(isOwner || isAdmin) && (
+                <button onClick={toggleComments} className="btn-ghost text-xs">
+                  {box.comments_enabled ? <><MessageSquareOff size={14} /> Turn comments off</> : <><MessageSquare size={14} /> Turn comments on</>}
+                </button>
+              )}
               {canDelete && (
                 <button onClick={deleteBox} className="btn-red !py-1.5 !px-3 text-xs"><Trash2 size={14} /> Delete</button>
               )}
@@ -205,11 +224,12 @@ function BoxPage() {
           )}
         </div>
       </div>
+      <BoxComments boxId={box.id} boxAuthorId={box.author_id} enabled={box.comments_enabled} />
     </div>
   );
 }
 
-function MediaTile({ media }: { media: Media }) {
+function MediaTile({ media, full = false }: { media: Media; full?: boolean }) {
   const [url, setUrl] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
@@ -218,7 +238,16 @@ function MediaTile({ media }: { media: Media }) {
   }, [media.path]);
   if (!url) return <div className="skeleton h-64 rounded-md" />;
   if (media.kind === "video") {
-    return <video src={url} controls className="w-full max-h-[560px] rounded-md bg-black" />;
+    return (
+      <video
+        src={url}
+        controls
+        playsInline
+        preload="metadata"
+        controlsList="nodownload"
+        className={`w-full rounded-md bg-black object-contain ${full ? "max-h-[70vh] min-h-[240px]" : "max-h-[560px]"}`}
+      />
+    );
   }
-  return <img src={url} alt="" className="w-full max-h-[560px] object-contain rounded-md bg-black" loading="lazy" />;
+  return <img src={url} alt="" className={`w-full object-contain rounded-md bg-black ${full ? "max-h-[70vh]" : "max-h-[560px]"}`} loading="lazy" />;
 }
