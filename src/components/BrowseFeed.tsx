@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { BoxCard, type BoxRow } from "./BoxCard";
 import { Search } from "lucide-react";
 
-type Filter = "recent" | "popular" | "verified";
+type Filter = "recent" | "popular" | "most liked" | "verified";
 
 export function BrowseFeed() {
   const [filter, setFilter] = useState<Filter>("recent");
@@ -20,6 +20,7 @@ export function BrowseFeed() {
         .limit(60);
       if (filter === "recent") q = q.order("created_at", { ascending: false });
       if (filter === "popular") q = q.order("views", { ascending: false });
+      if (filter === "most liked") q = q.order("likes", { ascending: false }).order("created_at", { ascending: false });
       if (filter === "verified") q = q.eq("verified", true).order("created_at", { ascending: false });
       const { data } = await q;
       if (!alive) return;
@@ -51,7 +52,7 @@ export function BrowseFeed() {
         />
       </div>
       <div className="flex items-center gap-2">
-        {(["recent", "popular", "verified"] as Filter[]).map((f) => (
+        {(["recent", "popular", "most liked", "verified"] as Filter[]).map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}

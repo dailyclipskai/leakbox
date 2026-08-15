@@ -38,6 +38,21 @@ export function FriendsPanel() {
     load();
   }
 
+  async function cancelRequest(id: string) {
+    const { error } = await supabase.from("friendships").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Friend request cancelled.");
+    load();
+  }
+
+  async function removeFriend(id: string) {
+    if (!confirm("Remove this friend?")) return;
+    const { error } = await supabase.from("friendships").delete().eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success("Friend removed.");
+    load();
+  }
+
   if (rows === null) return <div className="skeleton h-24" />;
 
   return (
@@ -54,9 +69,10 @@ export function FriendsPanel() {
             </div>
           ))}
           {outgoing.map((r) => (
-            <div key={r.id} className="glass p-3 flex items-center gap-3 opacity-70">
+            <div key={r.id} className="glass p-3 flex items-center gap-3">
               <Avatar p={r.profile} />
-              <div className="flex-1"><div className="truncate">{r.profile.display_name}</div><div className="text-xs text-muted-foreground">request pending</div></div>
+              <div className="flex-1 min-w-0"><div className="truncate">{r.profile.display_name}</div><div className="text-xs text-muted-foreground">request sent — pending</div></div>
+              <button onClick={() => cancelRequest(r.id)} className="btn-ghost text-xs"><X size={14} /> Cancel</button>
             </div>
           ))}
         </div>
@@ -72,6 +88,7 @@ export function FriendsPanel() {
               <div className="text-xs text-muted-foreground">@{r.profile.username}</div>
             </div>
             <Link to="/messages/$userId" params={{ userId: r.profile.id }} className="btn-ghost text-xs"><MessageCircle size={14} /> Message</Link>
+            <button onClick={() => removeFriend(r.id)} className="btn-ghost text-xs" title="Remove friend"><X size={14} /></button>
           </div>
         ))}
         {friends.length === 0 && <div className="glass p-6 text-center text-muted-foreground">No friends yet.</div>}
