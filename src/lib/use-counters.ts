@@ -25,10 +25,13 @@ export function useCounters(): Counters {
 
     load();
     const t = setInterval(load, 10000);
+    // unique channel name per hook instance: several components use this hook at
+    // once, and reusing one name re-subscribes an already-subscribed channel.
     const ch = supabase
-      .channel(`counters:${uid}`)
+      .channel(`counters:${uid}:${Math.random().toString(36).slice(2)}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "notifications" }, load)
+      .on("postgres_changes", { event: "*", schema: "public", table: "friendships" }, load)
       .subscribe();
     return () => { alive = false; clearInterval(t); supabase.removeChannel(ch); };
   }, [session?.user?.id]);
