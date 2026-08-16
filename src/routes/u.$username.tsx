@@ -90,6 +90,19 @@ function Profile() {
     toast.success("Request sent.");
   }
 
+  async function cancelFriend() {
+    if (!session?.user || !p) return;
+    const { error } = await supabase
+      .from("friendships")
+      .delete()
+      .eq("requester_id", session.user.id)
+      .eq("addressee_id", p.id)
+      .eq("status", "pending");
+    if (error) return toast.error(error.message);
+    setFriendStatus("none");
+    toast.success("Request cancelled.");
+  }
+
   async function requestVerification() {
     if (!me) return;
     const ageDays = (Date.now() - new Date(me.join_date).getTime()) / (24 * 3600 * 1000);
@@ -198,8 +211,12 @@ function Profile() {
         </div>
         <div className="flex flex-col gap-2">
           {!isMe && session && (
-            <button onClick={sendFriend} disabled={friendStatus !== "none"} className="btn-red text-xs">
-              <UserPlus size={14} /> {friendStatus === "accepted" ? "Friends" : friendStatus === "outgoing" ? "Requested" : friendStatus === "pending" ? "Accept in Friends" : "Add friend"}
+            <button
+              onClick={friendStatus === "outgoing" ? cancelFriend : sendFriend}
+              disabled={friendStatus === "accepted" || friendStatus === "pending"}
+              className="btn-red text-xs"
+            >
+              <UserPlus size={14} /> {friendStatus === "accepted" ? "Friends" : friendStatus === "outgoing" ? "Cancel request" : friendStatus === "pending" ? "Accept in Friends" : "Add friend"}
             </button>
           )}
           {isMe && (
