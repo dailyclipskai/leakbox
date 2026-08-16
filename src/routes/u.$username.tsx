@@ -92,6 +92,7 @@ function Profile() {
 
   async function requestVerification() {
     if (!me) return;
+    if (!me) return;
     const ageDays = (Date.now() - new Date(me.join_date).getTime()) / (24 * 3600 * 1000);
     if (ageDays < 1 || verified.length < 2) return toast.error("You do not meet the verification requirements.");
     const { error } = await supabase.from("verification_requests").insert({ user_id: me.id });
