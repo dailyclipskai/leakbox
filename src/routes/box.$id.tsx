@@ -10,6 +10,7 @@ import { Eye, Heart, Share2, Calendar, ArrowLeft, ShieldCheck, Trash2, Lock, Glo
 import { toast } from "sonner";
 import { BoxComments } from "@/components/BoxComments";
 import { guestToken } from "@/lib/guest-token";
+import { MediaViewer, type ViewerMedia } from "@/components/MediaViewer";
 
 type Search = { q?: string };
 
@@ -151,12 +152,21 @@ function BoxPage() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6">
-      <button onClick={() => navigate({ to: "/" })} className="btn-ghost mb-4 text-xs"><ArrowLeft size={14} /> Back</button>
+      <button
+        onClick={() => { if (typeof window !== "undefined" && window.history.length > 1) window.history.back(); else navigate({ to: "/browse" }); }}
+        className="btn-ghost mb-4 text-xs"
+      >
+        <ArrowLeft size={14} /> Back
+      </button>
       <div className="glass overflow-hidden fade-in">
         <div className="relative bg-black/60">
           {mediaList.length > 0 ? (
-            <div className={`grid gap-2 p-2 ${singleMedia ? "grid-cols-1" : "sm:grid-cols-2"}`}>
-              {mediaList.map((m, i) => <MediaTile key={i} media={m} full={singleMedia} />)}
+            <div className="p-2">
+              <MediaViewer items={mediaList as ViewerMedia[]} />
+            </div>
+          ) : box.image_url ? (
+            <div className="p-2">
+              <MediaViewer items={[{ path: box.image_url, kind: "image" }]} />
             </div>
           ) : (
             <BoxImage path={box.image_url} alt={box.name} className="w-full max-h-[560px] object-contain" fallbackClassName="w-full h-96" />

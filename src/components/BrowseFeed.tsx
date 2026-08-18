@@ -5,10 +5,12 @@ import { Search } from "lucide-react";
 
 type Filter = "recent" | "popular" | "most liked" | "verified";
 
-export function BrowseFeed() {
+export function BrowseFeed({ initialQuery = "" }: { initialQuery?: string }) {
   const [filter, setFilter] = useState<Filter>("recent");
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [boxes, setBoxes] = useState<BoxRow[] | null>(null);
+
+  useEffect(() => { setQuery(initialQuery); }, [initialQuery]);
 
   useEffect(() => {
     let alive = true;

@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { BrowseFeed } from "@/components/BrowseFeed";
 
+type Search = { q?: string };
+
 export const Route = createFileRoute("/browse")({
+  validateSearch: (s: Record<string, unknown>): Search => ({ q: typeof s.q === "string" ? s.q : undefined }),
   head: () => ({
     meta: [
       { title: "Browse Boxes — LeakBox" },
@@ -14,10 +17,11 @@ export const Route = createFileRoute("/browse")({
 });
 
 function Browse() {
+  const { q } = Route.useSearch();
   return (
     <div className="max-w-5xl mx-auto px-4 py-6">
       <h1 className="font-horror text-3xl text-primary red-glow mb-4">Browse Boxes</h1>
-      <BrowseFeed />
+      <BrowseFeed initialQuery={q ?? ""} />
     </div>
   );
 }
