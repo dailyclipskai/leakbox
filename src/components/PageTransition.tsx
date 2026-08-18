@@ -20,6 +20,7 @@ export function PageTransition() {
   if (!show) return null;
   return (
     <div key={key} className="page-transition" aria-hidden>
+      <div className="page-transition-ring" />
       <div className="page-transition-logo">
         <Logo size={64} />
       </div>
