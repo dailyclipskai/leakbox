@@ -9,9 +9,9 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "BoxLeak — Browse boxes" },
-      { name: "description", content: "BoxLeak Central is a website for discovering and sharing community-created \"boxes\" of information." },
+      { name: "description", content: "website for discovering and sharing community-created "boxes" of information." },
       { property: "og:title", content: "BoxLeak — Browse boxes" },
-      { property: "og:description", content: "BoxLeak Central is a website for discovering and sharing community-created \"boxes\" of information." },
+      { property: "og:description", content: "website for discovering and sharing community-created "boxes" of information." },
     ],
   }),
   component: Home,
