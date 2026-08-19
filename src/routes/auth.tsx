@@ -31,7 +31,6 @@ const regSchema = z.object({
   username: z.string().trim().toLowerCase().min(3, "Min 3 characters").max(20).regex(/^[a-z0-9_]+$/, "Letters, numbers, underscore only"),
   password: z.string().min(6, "Min 6 characters").max(72),
   confirm: z.string(),
-  birthday: z.string().min(1, "Required"),
 }).refine((d) => d.password === d.confirm, { path: ["confirm"], message: "Passwords don't match" });
 
 function Auth() {
@@ -44,7 +43,7 @@ function Auth() {
   const [lUsername, setLUsername] = useState("");
   const [lPassword, setLPassword] = useState("");
   // register state
-  const [rForm, setRForm] = useState({ display_name: "", username: "", password: "", confirm: "", birthday: "" });
+  const [rForm, setRForm] = useState({ display_name: "", username: "", password: "", confirm: "" });
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
@@ -65,14 +64,14 @@ function Auth() {
     const parsed = regSchema.safeParse(rForm);
     if (!parsed.success) return toast.error(parsed.error.issues[0]?.message ?? "Invalid form");
     setLoading(true);
-    const { username, display_name, password, birthday } = parsed.data;
+    const { username, display_name, password } = parsed.data;
     // Check username availability
     const { data: existing } = await supabase.from("profiles").select("id").eq("username", username).maybeSingle();
     if (existing) { setLoading(false); return toast.error("Username taken."); }
     const { error } = await supabase.auth.signUp({
       email: syntheticEmail(username),
       password,
-      options: { data: { username, display_name, birthday } },
+      options: { data: { username, display_name } },
     });
     setLoading(false);
     if (error) return toast.error(error.message);
@@ -131,10 +130,6 @@ function Auth() {
             <div>
               <label className="text-xs text-muted-foreground">Confirm Password</label>
               <input type="password" className="leak-input mt-1" value={rForm.confirm} onChange={(e) => setRForm({ ...rForm, confirm: e.target.value })} required />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground">Birthday</label>
-              <input type="date" className="leak-input mt-1" value={rForm.birthday} onChange={(e) => setRForm({ ...rForm, birthday: e.target.value })} required />
             </div>
             <div className="text-xs text-primary/80 border border-primary/40 bg-primary/10 rounded p-2">
               ⚠ Remember your password. Password recovery through email is unavailable.
