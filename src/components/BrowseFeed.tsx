@@ -53,7 +53,7 @@ export function BrowseFeed({ initialQuery = "" }: { initialQuery?: string }) {
           className="flex-1 bg-transparent outline-none py-2 px-1 text-sm placeholder:text-muted-foreground"
         />
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         {(["recent", "popular", "most liked", "verified"] as Filter[]).map((f) => (
           <button
             key={f}
