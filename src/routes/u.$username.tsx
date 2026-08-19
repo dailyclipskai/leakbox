@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { BoxCard, type BoxRow } from "@/components/BoxCard";
 import { toast } from "sonner";
-import { UserPlus, ShieldCheck, BadgePlus, Camera } from "lucide-react";
+import { UserPlus, ShieldCheck, BadgePlus, Camera, Pencil } from "lucide-react";
 
 export const Route = createFileRoute("/u/$username")({
   head: ({ params }) => ({
@@ -35,6 +35,8 @@ function Profile() {
   const [uploadingPfp, setUploadingPfp] = useState(false);
   const [editingBio, setEditingBio] = useState(false);
   const [bioDraft, setBioDraft] = useState("");
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
 
   useEffect(() => {
     let alive = true;
@@ -74,7 +76,6 @@ function Profile() {
 
   const isMe = session?.user?.id === p.id;
   const allBoxes = boxes ?? [];
-  // Non-owners cannot see private boxes anyway (RLS filters). For self view we split by visibility.
   const posted = isMe ? allBoxes.filter((b) => b.visibility !== "private") : allBoxes;
   const verified = posted.filter((b) => b.verified);
   const privateBoxes = isMe ? allBoxes.filter((b) => b.visibility === "private") : [];
@@ -151,6 +152,18 @@ function Profile() {
     toast.success("Bio updated.");
   }
 
+  async function saveDisplayName() {
+    if (!p) return;
+    const display_name = nameDraft.trim().slice(0, 40) || p.display_name;
+    if (display_name === p.display_name) { setEditingName(false); return; }
+    const { error } = await supabase.from("profiles").update({ display_name }).eq("id", p.id);
+    if (error) return toast.error(error.message);
+    setP({ ...p, display_name });
+    setEditingName(false);
+    await refresh();
+    toast.success("Display name updated.");
+  }
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
       <div className="glass p-6 flex flex-col md:flex-row items-center gap-6 fade-in">
@@ -177,10 +190,35 @@ function Profile() {
           )}
           {uploadingPfp && <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-[10px]">Uploading…</div>}
         </div>
-        <div className="flex-1 text-center md:text-left">
-          <h1 className="font-horror text-3xl flex items-center gap-2 justify-center md:justify-start">
-            {p.display_name}{p.verified && <VerifiedBadge size={22} title="Verified user" />}
-          </h1>
+        <div className="flex-1 text-center md:text-left min-w-0">
+          {editingName ? (
+            <div className="space-y-2">
+              <input
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                maxLength={40}
+                placeholder="Display name"
+                className="leak-input text-sm w-full md:w-auto"
+              />
+              <div className="flex gap-2 justify-center md:justify-start">
+                <button onClick={saveDisplayName} className="btn-red text-xs">Save name</button>
+                <button onClick={() => setEditingName(false)} className="btn-ghost text-xs">Cancel</button>
+              </div>
+            </div>
+          ) : (
+            <h1 className="font-horror text-3xl flex items-center gap-2 justify-center md:justify-start flex-wrap">
+              {p.display_name}{p.verified && <VerifiedBadge size={22} title="Verified user" />}
+              {isMe && (
+                <button
+                  onClick={() => { setNameDraft(p.display_name); setEditingName(true); }}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  title="Edit display name"
+                >
+                  <Pencil size={14} />
+                </button>
+              )}
+            </h1>
+          )}
           <p className="text-muted-foreground">@{p.username}</p>
           <p className="text-xs text-muted-foreground mt-1">Joined {new Date(p.join_date).toLocaleDateString()}</p>
           {editingBio ? (
@@ -230,7 +268,7 @@ function Profile() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         <Stat label="Posted" value={posted.length} />
         <Stat label="Verified" value={verified.length} />
         <Stat label="Rank" value={rank ? `#${rank}` : "—"} />
@@ -239,7 +277,7 @@ function Profile() {
         <Stat label="Total Likes" value={totalLikes} />
       </div>
 
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         {(isMe ? (["posted", "verified", "private"] as const) : (["posted", "verified"] as const)).map((t) => (
           <button key={t} onClick={() => setTab(t)} className={`px-3 py-1.5 rounded-md text-sm capitalize border ${tab === t ? "border-border bg-accent" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
             {t === "posted" ? "Posted" : t === "verified" ? "Verified" : `Private (${privateBoxes.length})`}
@@ -248,7 +286,9 @@ function Profile() {
       </div>
 
       {boxes === null ? (
-        <div className="skeleton h-40" />
+        <div className="grid gap-4 sm:grid-cols-2">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="skeleton h-72" />)}
+        </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {(tab === "posted" ? posted : tab === "verified" ? verified : privateBoxes).map((b) => <BoxCard key={b.id} box={b} />)}
